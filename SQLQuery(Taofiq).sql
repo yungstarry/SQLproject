@@ -179,12 +179,25 @@ project_name varchar(100),
 team_member_id varchar(20),
 )
 
+
+
 insert into project values
 ('P1', 'Data Migration', 'E1'),
 ('P1', 'Data Migration', 'E2'),
 ('P1', 'Data Migration', 'M3'),
 ('P2', 'ETL Tool', 'E1'),
 ('P2', 'ETL Tool', 'M4')
+
+--drop table company
+create Table company (
+company_id varchar(20),
+company_name varchar(100),
+location varchar(200),
+)
+
+insert into company values
+('C001', 'Adordev Solutions', 'London United Kingdom')
+
 
 select * from employee
 select * from department
@@ -199,8 +212,30 @@ select e.emp_name, d.dept_name
 from employee as E
 right join department as D on e.dept_id = d.dept_id
 
+select e.emp_name, d.dept_name
+from employee as E
+full join department as D on e.dept_id = d.dept_id
+
+select e.emp_name, d.dept_name
+from employee as E
+full join department as D on d.dept_id = e.dept_id
+
 select e.emp_name, d.dept_name, m.manager_name, p.project_name
 from employee as E
 left  join department as D on e.dept_id = d.dept_id
 inner join manager as M on m.manager_id = e.manager_id
 left join project as P on p.team_member_id = e.emp_id
+
+
+--cross join
+--cross join also known as cartesian join that returns cartesian products
+
+select e.emp_name, d.dept_name
+from employee e
+cross join department d
+
+
+
+select e.emp_name, e.salary, c.company_name, c.location
+from employee e
+cross join company c
