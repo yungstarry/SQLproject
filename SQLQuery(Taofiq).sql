@@ -380,7 +380,7 @@ from EMPLOYEE) avg_sal
 on e.SALARY > avg_sal.sal
 
 
---mulltiple row subquery -- returns multiple column and multiple row or one column multiple column
+--mulltiple row subquery -- returns multiple column and multiple row or one column multiple row
 
 -- Question: Find the employee who earn higest salary in each department
 
@@ -388,20 +388,21 @@ select e.DEPT_NAME, MAX(e.salary) as Max_Salary
 from EMPLOYEE e
 group by e.dept_name
 
-select *
-from EMPLOYEE
-where exists(DEPT_NAME,salary) (select e.DEPT_NAME, MAX(e.salary) as Max_Salary
+select * 
 from EMPLOYEE e
-group by e.dept_name)
-having DEPT_NAME = SALARY
-
-
+where Exists (
+select e2.DEPT_NAME, MAX(e2.salary) as Max_Salary
+from EMPLOYEE e2
+where e.DEPT_NAME = e2.DEPT_NAME
+group by e2.dept_name
+having MAX(e2.SALARY) = e.SALARY
+)
 
 
 SELECT E1.*
 FROM EMPLOYEE E1
 WHERE EXISTS (
-    SELECT *
+    SELECT 1
     FROM EMPLOYEE E2
     WHERE E1.DEPT_NAME = E2.DEPT_NAME
     GROUP BY DEPT_NAME
@@ -409,7 +410,96 @@ WHERE EXISTS (
 );
 
 
+SELECT *
+FROM Employee e
+WHERE EXISTS (
+    SELECT 1
+    FROM Employee e2
+    WHERE e2.EMP_ID = e.EMP_ID
+    AND e2.Salary > (SELECT AVG(Salary) FROM Employee WHERE DEPT_NAME = e.DEPT_NAME)
+);
 
 
+SELECT e.DEPT_NAME, e.EMP_NAME
+FROM Employee e
+WHERE DEPT_NAME = (SELECT DEPT_NAME FROM Department WHERE DEPT_NAME = 'IT');
+
+SELECT *
+FROM department d
+WHERE dept_id IN (SELECT dept_id FROM Employee WHERE Salary > 2000);
+
+
+--single column and multiple row subquery
+--Question: Find department who do not have any employees
+select  avg(salary) as avgd
+from EMPLOYEE
+
+
+select * from department
+
+
+select d.dept_name
+from department d
+
+--deptname != emp_name
+select d.dept_name
+from department d
+where d.dept_name not in (select distinct dept_name from EMPLOYEE
+)
 
 --correlated subquery
+-- a subquery which is depend on the outer query
+--find the employees in each department who earn more than average salary in that department
+
+select distinct e1.emp_name, e1.DEPT_NAME, e1.SALARY
+from EMPLOYEE e1
+where e1.SALARY > (
+select  avg(e2.salary)
+from EMPLOYEE e2
+where e2.DEPT_NAME = e1.DEPT_NAME
+)
+
+--multiple nested subquery
+--find stores who's sales were better than the average sales accross all stores
+
+select * from sales
+
+select *
+from (select store_name, sum(price) as total_sales
+from sales
+group by store_name) sales
+
+join (select avg(total_sales)as sales
+from(select store_name, sum(price) as total_sales
+from sales
+group by store_name) x) as avg_sales
+
+on sales.total_sales > avg_sales.sales
+
+
+WITH sales as (
+			select store_name, sum(price) as total_sales		
+			from sales 
+			group by store_name)
+select *
+from sales
+join (select avg(total_sales)as sales
+			from sales x) as avg_sales
+			on sales.total_sales > avg_sales.sales
+
+
+
+
+
+
+SELECT store_name, total_sales,avg_sales
+FROM (
+    SELECT store_name, SUM(price) AS total_sales,
+           AVG(SUM(price)) OVER () AS avg_sales
+    FROM sales
+    GROUP BY store_name
+) AS subquery
+WHERE total_sales > avg_sales;
+
+
+
