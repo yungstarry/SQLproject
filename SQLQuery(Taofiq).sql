@@ -501,5 +501,182 @@ FROM (
 ) AS subquery
 WHERE total_sales > avg_sales;
 
+--today 
+--different sql clause where subquery is allowed
+
+--SELECT --FROM --WHERE --HAVING
+
+--USING a subquery in SELECT CLAUSE (NOT RECOMMENDED)
+
+--QUESTION: Fetch all employee details and add remarks to those employess who earn more than the average pay
+
+select *
+, (case when salary > (select avg(salary) from employee) 
+	then 'Higher than average' 
+	else null 
+	end) as remarks
+from employee
+
+--subqueries with HAVING 
+-- question : find the stores who have sold more units than the average units sold by stores
 
 
+select store_name, sum(quantity) as tia
+from sales
+group by store_name
+having (sum(quantity)) > (select avg(quantity) from sales)
+
+
+--subqueries can also be used in statement
+--INSERT
+--UPDATE
+--DELETE
+--QUESTION: Insert data to employee history table. Make sure not to insert duplicate records
+
+select * from employee_history
+
+insert into employee_history (emp_id, emp_name, salary, dept_name, location)
+select e.EMP_ID, e.EMP_NAME, e.SALARY, d.dept_name, d.location
+from employee e
+join department d on d.dept_name = e.DEPT_NAME
+where not exists(select 1
+					from employee_history eh
+					where eh.emp_id = e.EMP_ID
+											)
+
+
+--UPdate
+--Question: Give 10% increment to all emplotess in Bangalore location based on the maximum salary earned by an emp in each dept. Only consider employees in employee_history table
+
+update e
+set e.salary =(select max(eh.salary) + max(eh.salary) * 0.1
+				from employee_history eh
+				where eh.dept_name = e.dept_name)
+from EMPLOYEE e
+where e.dept_name  in (select dept_name
+						from department
+						where location ='Bangalore')
+
+and e.emp_id in (select emp_id from employee_history)
+
+
+--DELETE
+--qUESTION: Delete all departments who do not have any employee
+
+delete from department
+WHERE  dept_name in (
+					select dept_name
+					from department d
+					where not exists (select 1
+									  from employee e 
+									  where e.dept_name = d.dept_name))
+
+
+
+select * from EMPLOYEE
+
+--CTE means Common Table Expression or Sub-Query Factoring
+
+--fetch employees who earn more than average salary of al employees
+with avg_salary (avg_sal) as (select avg(salary) 
+							  from EMPLOYEE)
+select *
+from EMPLOYEE e, avg_salary av
+where e.SALARY > av.avg_sal
+
+
+select * from sales
+
+--find stores who's sales where better than the avg sales accross all stores
+
+select * from sales
+
+
+with avg_sales (avg_salesUnit) as (select avg(price*quantity)
+from sales)
+
+select *
+from sales s, avg_sales avs
+where (s.price * s.quantity) > avs.avg_salesUnit
+
+--anotherway
+with Total_sales(store_id, total_sales_per_store) as  
+						(select s.store_id, sum(price) as total_sales_per_store
+											from sales s
+											group by s.store_id),
+		avg_sales (avg_sales_for_all_store) as 
+		(select avg(total_sales_per_store) as  avg_sales_for_all_store
+		 from Total_sales	)
+select *
+from Total_sales ts
+join avg_sales av
+on ts.total_sales_per_store > av.avg_sales_for_all_store
+
+
+-- another way
+
+select store_id, sum(price) as Total_sales
+from sales
+group by store_id
+
+
+select avg(total_sales_per_store) as avg_sales_for_all_store
+from (select s.store_id, sum(price) as total_sales_per_store
+	  from sales s
+	  group by s.store_id) x
+
+select *
+from (select s.store_id, sum(price) as total_sales_per_store
+from sales s
+group by store_id) as total_sales
+join (select avg(total_sales_per_store) as avg_sales_for_all_store
+		from (select s.store_id, sum(price) as total_sales_per_store
+				from sales s
+				 group by s.store_id) x) avg_sales
+	on total_sales.total_sales_per_store > avg_sales.avg_sales_for_all_store
+
+--Window Function
+--window function includes rank, Dense_rank, row_number, lead, lag
+
+select *
+from EMPLOYEE
+
+select max(salary ) from EMPLOYEE
+
+select e.*,
+max(salary) over(partition by dept_name) as max_salary
+from EMPLOYEE e
+
+--row_number, rank, dense_rank, lead and lag
+ select e.*,
+ row_number() over(partition by dept_name ORDER BY e.EMP_ID) as rn
+ from EMPLOYEE e
+
+
+ select * from (
+  SELECT e.*, ROW_NUMBER() OVER (partition by dept_name ORDER BY e.EMP_ID) AS rn
+FROM EMPLOYEE e
+ ) x
+ where x.rn < 3
+
+ --rank
+ --fetch the top 3 employees in each department earning the max salary
+
+ select * from (
+ select e.*,
+ rank() over(partition by dept_name order by salary desc ) as rnk
+ from EMPLOYEE e) x
+ where x.rnk < 4
+ 
+
+ --denserank
+
+ select e.*,
+ rank() over(partition by dept_name order by salary desc ) as rnk,
+ dense_rank() over(partition by dept_name order by salary desc ) as DENSE_rnk,
+ row_number() over(partition by dept_name order by salary desc ) as rnk
+
+ from EMPLOYEE e
+
+ --lead and lead
+ -- fetch a query to display if the salary of an employee is higher, lower or equal to the previous employee
