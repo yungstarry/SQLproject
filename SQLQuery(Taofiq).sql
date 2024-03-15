@@ -501,7 +501,7 @@ FROM (
 ) AS subquery
 WHERE total_sales > avg_sales;
 
---today 
+
 --different sql clause where subquery is allowed
 
 --SELECT --FROM --WHERE --HAVING
@@ -678,5 +678,89 @@ FROM EMPLOYEE e
 
  from EMPLOYEE e
 
- --lead and lead
+ --lag and lead
  -- fetch a query to display if the salary of an employee is higher, lower or equal to the previous employee
+
+ select e.*,
+ lag(salary) over(partition by dept_name order by emp_id) as prev_emp_salary
+ from EMPLOYEE e
+
+
+ select e.*,
+ lag(salary, 2, 0) over(partition by dept_name order by emp_id) as prev_emp_salary
+ from EMPLOYEE e
+
+
+ select e.*,
+ lead(salary) over(partition by dept_name order by emp_id) as next_emp_salary
+ from EMPLOYEE e
+
+
+ select e.*,
+ lag(salary) over(partition by dept_name order by emp_id) as prev_emp_salary,
+ case when e.salary > lag(salary) over (partition by dept_name order by emp_id)  then 'Higher than Previous employee'
+		when e.salary < lag(salary) over (partition by dept_name order by emp_id)  then 'Lower than Previous employee'
+		when e.salary = lag(salary) over (partition by dept_name order by emp_id)  then 'same as the Previous employee'
+		end sal_range
+ from EMPLOYEE e
+
+
+ --first value, last value, nth_value, ntile, percent_rank, cume_dist
+
+
+ create table product (
+ product_category varchar(255),
+ brand varchar(255),
+ product_name varchar(255),
+ price int
+ )
+
+ insert into product values
+ ('Phone', 'Apple', 'iPhone 12 Pro Max' ,1300),
+ ('Phone', 'Apple', 'iPhone 12 Pro ' ,1100),
+ ('Phone', 'Apple', 'iPhone 12  ' ,1000),
+ ('Phone', 'Samsung', 'Galaxy Z Fold 3' ,1800),
+ ('Phone', 'Samsung', 'Galaxy Z Flip 3' ,1000),
+ ('Phone', 'Samsung', 'Galaxy Note 20' ,1200),
+ ('Phone', 'Samsung', 'Galaxy S21' ,1000),
+ ('Phone', 'OnePlus', 'OnePlus Nord' ,300),
+ ('Phone', 'OnePlus', 'OnePlus 9' ,800),
+ ('Phone', 'Google', 'Pixel 5' ,600),
+ ('Laptop', 'Apple', 'MacBook Pro 13' ,2000),
+ ('Laptop', 'Apple', 'MacBook Air' ,1200),
+ ('Laptop', 'Micrsoft', 'Surface Laptop 4' ,2100),
+ ('Laptop', 'Dell', 'XPS 13' ,2000),
+ ('Laptop', 'Dell', 'XPS 15' ,2300),
+ ('Laptop', 'Dell', 'XPS 17' ,2500),
+ ('Earphone', 'Apple', 'AirPods Pro' ,280),
+ ('Earphone', 'Samsung', 'Galaxy Buds Pro' ,220 ),
+ ('Earphone', 'SamSung', 'Galaxy Buds Live' ,170),
+ ('Earphone', 'Sony', 'WF-1000XM4' ,250),
+ ('Headphone', 'Sony', 'WF-1000XM4' ,400),
+ ('Headphone', 'Apple', 'AirPods Max', 550),
+ ('Headphone', 'Microsoft', 'Surface Headphones 2' ,250),
+ ('Smartwatch', 'Apple', 'Apple Watch series 6' ,1000),
+ ('Smartwatch', 'Apple', 'Apple Watch SE' ,400),
+  ('Smartwatch', 'Samsung', 'Galaxy Watch 4',600),
+ ('Smartwatch', 'OnePlus', 'OnePlus Watch ', 200)
+
+
+
+ --first_value
+ --write query to display the most expensive product under each category (corresponfing to each record)
+
+
+ select * ,
+ first_value(product_name) over(partition by product_category order by price desc) as Most_exp_product
+ from product
+
+  --last_value
+ --write query to display the least expensive product under each category (corresponfing to each record)
+
+
+ --frame clause -- frame is a subset of partition
+
+ select * ,
+ first_value(product_name) over(partition by product_category order by price desc) as Most_exp_product,
+ last_value(product_name) over(partition by product_category order by price desc range between unbounded preceding and unbounded following) as least_exp_product
+ from product
