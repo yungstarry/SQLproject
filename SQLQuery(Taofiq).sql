@@ -957,3 +957,215 @@ select * from apple_products
 select * from tb_product_info
 insert into apple_products values
 ('P22', 'Note 20', 'Apple', 2500);
+
+
+
+--Resursive SQl queries
+
+WITH  CTE_name AS
+	(
+     SELECT query (Non Recursive query or the Base query)
+	    UNION ALL
+	 SELECT query (Recursive query using CTE_name [with a termination condition])
+	)
+SELECT * FROM CTE_name;
+
+
+DROP TABLE emp_details;
+CREATE TABLE emp_details
+    (
+        id           int PRIMARY KEY,
+        name         varchar(100),
+        manager_id   int,
+        salary       int,
+        designation  varchar(100)
+
+    );
+
+INSERT INTO emp_details VALUES (1,  'Shripadh', NULL, 10000, 'CEO');
+INSERT INTO emp_details VALUES (2,  'Satya', 5, 1400, 'Software Engineer');
+INSERT INTO emp_details VALUES (3,  'Jia', 5, 500, 'Data Analyst');
+INSERT INTO emp_details VALUES (4,  'David', 5, 1800, 'Data Scientist');
+INSERT INTO emp_details VALUES (5,  'Michael', 7, 3000, 'Manager');
+INSERT INTO emp_details VALUES (6,  'Arvind', 7, 2400, 'Architect');
+INSERT INTO emp_details VALUES (7,  'Asha', 1, 4200, 'CTO');
+INSERT INTO emp_details VALUES (8,  'Maryam', 1, 3500, 'Manager');
+INSERT INTO emp_details VALUES (9,  'Reshma', 8, 2000, 'Business Analyst');
+INSERT INTO emp_details VALUES (10, 'Akshay', 8, 2500, 'Java Developer');
+
+
+
+
+-- Q1: Display number from 1 to 10 without using any in built functions.
+
+
+with numbers as
+	(select 1 as n
+	union all
+	select n + 1
+	from numbers where n < 10)
+select * from numbers
+
+-- Q2: Find the hierarchy of employees under a given manager "Asha".
+select * from emp_details
+
+with  emp_hierarchy as
+	(select id, name, manager_id, designation, 1 as lvl
+	from emp_details where name='Asha'
+	union all
+	select E.id, E.name, E.manager_id, E.designation, H.lvl+ 1 as lvl
+	from emp_hierarchy H
+	join emp_details E on H.id = E.manager_id
+	)
+select H2.id as emp_id, h2.name as emp_name, e2.name as manager_name, h2.lvl as level
+from emp_hierarchy H2
+join emp_details E2 on E2.id = H2.manager_id
+
+
+-- Q3: Find the hierarchy of managers for a given employee "David".
+
+with  emp_hierarchy as
+	(select id, name, manager_id, designation, 1 as lvl
+	from emp_details where name='David'
+	union all
+	select E.id, E.name, E.manager_id, E.designation, H.lvl+ 1 as lvl
+	from emp_hierarchy H
+	join emp_details E on H.manager_id = E.id
+	)
+select H2.id as emp_id, h2.name as emp_name, e2.name as manager_name, h2.lvl as level
+from emp_hierarchy H2
+join emp_details E2 on E2.id = H2.manager_id
+
+
+
+-- Microsoft SQL Server
+drop table sales_data;
+create table sales_data
+    (
+        sales_date      date,
+        customer_id     varchar(30),
+        amount          varchar(30)
+    );
+insert into sales_data values (convert(datetime, '01-Jan-2021',105), 'Cust-1', '50$');
+insert into sales_data values (convert(datetime, '02-Jan-2021',105), 'Cust-1', '50$');
+insert into sales_data values (convert(datetime, '03-Jan-2021',105), 'Cust-1', '50$');
+insert into sales_data values (convert(datetime, '01-Jan-2021',105), 'Cust-2', '100$');
+insert into sales_data values (convert(datetime, '02-Jan-2021',105), 'Cust-2', '100$');
+insert into sales_data values (convert(datetime, '03-Jan-2021',105), 'Cust-2', '100$');
+insert into sales_data values (convert(datetime, '01-Feb-2021',105), 'Cust-2', '-100$');
+insert into sales_data values (convert(datetime, '02-Feb-2021',105), 'Cust-2', '-100$');
+insert into sales_data values (convert(datetime, '03-Feb-2021',105), 'Cust-2', '-100$');
+insert into sales_data values (convert(datetime, '01-Mar-2021',105), 'Cust-3', '1$');
+insert into sales_data values (convert(datetime, '01-Apr-2021',105), 'Cust-3', '1$');
+insert into sales_data values (convert(datetime, '01-May-2021',105), 'Cust-3', '1$');
+insert into sales_data values (convert(datetime, '01-Jun-2021',105), 'Cust-3', '1$');
+insert into sales_data values (convert(datetime, '01-Jul-2021',105), 'Cust-3', '-1$');
+insert into sales_data values (convert(datetime, '01-Aug-2021',105), 'Cust-3', '-1$');
+insert into sales_data values (convert(datetime, '01-Sep-2021',105), 'Cust-3', '-1$');
+insert into sales_data values (convert(datetime, '01-Oct-2021',105), 'Cust-3', '-1$');
+insert into sales_data values (convert(datetime, '01-Nov-2021',105), 'Cust-3', '-1$');
+insert into sales_data values (convert(datetime, '01-Dec-2021',105), 'Cust-3', '-1$');
+
+select * from sales_data;
+
+
+
+
+
+
+
+
+-- SOLUTIONS:
+/*
+Different parts of the query:
+1) Aggregate the sales amount for each customer per month:
+    - Build the base SQL query:
+        - Remove $ symbol
+        - Transform sales_date to fetch only the month and year.
+2) Aggregate the sales amount per month irrespective of the customer.
+3) Aggregate the sales amount per each customer irrespective of the month.
+4) Transform final output:
+    - Replace negative sign with parenthesis.
+    - Suffix amount with $ symbol.
+
+	*/
+
+
+
+
+-- SQL Server
+select * from sales_data
+
+SELECT customer_id as customer, 
+FORMAT(sales_date, 'MMM-yy') as sales_date, 
+replace(amount, '$', '') AS amount
+from sales_data;
+
+WITH pivot_data
+as
+		(select * 
+from
+	(
+	SELECT customer_id as customer, 
+	FORMAT(sales_date, 'MMM-yy') as sales_date, 
+	cast(replace(amount, '$', '') as int) AS amount
+	from sales_data
+	) as sales_data
+pivot(
+	sum(amount)
+	for sales_date in ([Jan-21], [Feb-21], [Mar-21], [Apr-21]
+                       ,[May-21], [Jun-21], [Jul-21], [Aug-21]
+                       ,[Sep-21], [Oct-21], [Nov-21], [Dec-21])
+	) as pivot_table
+
+union
+select * 
+from
+	(
+	SELECT 'Total' as customer, 
+	FORMAT(sales_date, 'MMM-yy') as sales_date, 
+	cast(replace(amount, '$', '') as int) AS amount
+	from sales_data
+	) as sales_data
+pivot(
+	sum(amount)
+	for sales_date in ([Jan-21], [Feb-21], [Mar-21], [Apr-21]
+                       ,[May-21], [Jun-21], [Jul-21], [Aug-21]
+                       ,[Sep-21], [Oct-21], [Nov-21], [Dec-21])
+	) as pivot_table),
+		final_data As
+		(select customer
+		, coalesce([Jan-21], 0) as Jan_21
+        , coalesce([Feb-21], 0) as Feb_21
+        , coalesce([Mar-21], 0) as Mar_21
+        , coalesce([Apr-21], 0) as Apr_21
+        , coalesce([May-21], 0) as May_21
+        , coalesce([Jun-21], 0) as Jun_21
+        , coalesce([Jul-21], 0) as Jul_21
+        , coalesce([Aug-21], 0) as Aug_21
+        , coalesce([Sep-21], 0) as Sep_21
+        , coalesce([Oct-21], 0) as Oct_21
+        , coalesce([Nov-21], 0) as Nov_21
+        , coalesce([Dec-21], 0) as Dec_21
+		from pivot_data)
+select customer
+, case when Jan_21 < 0 then concat('(', Jan_21 * -1, ')$') else concat(Jan_21, '$') end as [Jan-21]
+, case when Feb_21 < 0 then concat('(', Feb_21 * -1, ')$') else concat(Feb_21, '$') end as [Feb-21]
+, case when Mar_21 < 0 then concat('(', Mar_21 * -1, ')$') else concat(Mar_21, '$') end as [Mar-21]
+, case when Apr_21 < 0 then concat('(', Apr_21 * -1, ')$') else concat(Apr_21, '$') end as [Apr-21]
+, case when May_21 < 0 then concat('(', May_21 * -1, ')$') else concat(May_21, '$') end as [May-21]
+, case when Jun_21 < 0 then concat('(', Jun_21 * -1, ')$') else concat(Jun_21, '$') end as [Jun-21]
+, case when Jul_21 < 0 then concat('(', Jul_21 * -1, ')$') else concat(Jul_21, '$') end as [Jul-21]
+, case when Aug_21 < 0 then concat('(', Aug_21 * -1, ')$') else concat(Aug_21, '$') end as [Aug-21]
+, case when Sep_21 < 0 then concat('(', Sep_21 * -1, ')$') else concat(Sep_21, '$') end as [Sep-21]
+, case when Oct_21 < 0 then concat('(', Oct_21 * -1, ')$') else concat(Oct_21, '$') end as [Oct-21]
+, case when Nov_21 < 0 then concat('(', Nov_21 * -1, ')$') else concat(Nov_21, '$') end as [Nov-21]
+, case when Dec_21 < 0 then concat('(', Dec_21 * -1, ')$') else concat(Dec_21, '$') end as [Dec-21]
+, case when Customer = 'Total' then null
+       else case when (Jan_21 + Feb_21 + Mar_21 + Apr_21 + May_21 + Jun_21 + Jul_21 + Aug_21 + Sep_21 + Oct_21 + Nov_21 + Dec_21) < 0
+                     then concat('(', (Jan_21 + Feb_21 + Mar_21 + Apr_21 + May_21 + Jun_21 + Jul_21 + Aug_21 + Sep_21 + Oct_21 + Nov_21 + Dec_21) * -1 , ')$')
+                 else concat((Jan_21 + Feb_21 + Mar_21 + Apr_21 + May_21 + Jun_21 + Jul_21 + Aug_21 + Sep_21 + Oct_21 + Nov_21 + Dec_21), '$')
+            end
+  end as Total
+
+from final_data
