@@ -1356,3 +1356,140 @@ with matches as
 	from matches team
 	join matches opponent on team.id <> opponent.id
 	order by team
+
+
+--- Q7 : Derive the output --- 
+if object_id('sales_data', 'u') is not null
+drop table sales_data;
+create table sales_data
+    (
+        sales_date      date,
+        customer_id     varchar(30),
+        amount          varchar(30)
+    );
+insert into sales_data values ('01-Jan-2021', 'Cust-1', '50$');
+insert into sales_data values ('02-Jan-2021', 'Cust-1', '50$');
+insert into sales_data values ('03-Jan-2021', 'Cust-1', '50$');
+insert into sales_data values ('01-Jan-2021', 'Cust-2', '100$');
+insert into sales_data values ('02-Jan-2021', 'Cust-2', '100$');
+insert into sales_data values ('03-Jan-2021', 'Cust-2', '100$');
+insert into sales_data values ('01-Feb-2021', 'Cust-2', '-100$');
+insert into sales_data values ('02-Feb-2021', 'Cust-2', '-100$');
+insert into sales_data values ('03-Feb-2021', 'Cust-2', '-100$');
+insert into sales_data values ('01-Mar-2021', 'Cust-3', '1$');
+insert into sales_data values ('01-Apr-2021', 'Cust-3', '1$');
+insert into sales_data values ('01-May-2021', 'Cust-3', '1$');
+insert into sales_data values ('01-Jun-2021', 'Cust-3', '1$');
+insert into sales_data values ('01-Jul-2021', 'Cust-3', '-1$');
+insert into sales_data values ('01-Aug-2021', 'Cust-3', '-1$');
+insert into sales_data values ('01-Sep-2021', 'Cust-3', '-1$');
+insert into sales_data values ('01-Oct-2021', 'Cust-3', '-1$');
+insert into sales_data values ('01-Nov-2021', 'Cust-3', '-1$');
+insert into sales_data values ('01-Dec-2021', 'Cust-3', '-1$');
+
+
+--- Q8: Find the hierarchy --- 
+if OBJECT_ID('emp_details', 'u') is not null
+drop TABLE emp_details;
+CREATE TABLE emp_details
+    (
+        id           int PRIMARY KEY,
+        name         varchar(100),
+        manager_id   int,
+        salary       int,
+        designation  varchar(100)
+    );
+INSERT INTO emp_details VALUES (1,  'Shripadh', NULL, 10000, 'CEO');
+INSERT INTO emp_details VALUES (2,  'Satya', 5, 1400, 'Software Engineer');
+INSERT INTO emp_details VALUES (3,  'Jia', 5, 500, 'Data Analyst');
+INSERT INTO emp_details VALUES (4,  'David', 5, 1800, 'Data Scientist');
+INSERT INTO emp_details VALUES (5,  'Michael', 7, 3000, 'Manager');
+INSERT INTO emp_details VALUES (6,  'Arvind', 7, 2400, 'Architect');
+INSERT INTO emp_details VALUES (7,  'Asha', 1, 4200, 'CTO');
+INSERT INTO emp_details VALUES (8,  'Maryam', 1, 3500, 'Manager');
+INSERT INTO emp_details VALUES (9,  'Reshma', 8, 2000, 'Business Analyst');
+INSERT INTO emp_details VALUES (10, 'Akshay', 8, 2500, 'Java Developer');
+
+
+select * from emp_details
+
+with cte as
+(
+select * from emp_details
+where name ='Asha'
+union all
+select e.*
+from cte
+join emp_details e on e.manager_id = cte.id
+)
+select *
+from cte
+
+
+
+--- Q10: Pizza Delivery Status --- 
+--Problem status 
+---- A pizza company is taking orders form customers, and each ordered is added as a seperate order. Each oder has an associated status, "CREATED OR SUBMITTED OR DELIVERED"  AN ORDER'S FINAL_STATUS IS CALCULATED BASED ON STATUS AS FOLLOWS:
+
+-- 1.. WHEN ALL orders for a customer have a status of Deliverd, that customer's order has a Final_Status of COMPLETED
+-- 2.  iF a customer has some orders that are not Delivered and some orders that are Delivered , the final_status is in progress
+---3. if all of a customer's orders are submitted, the Final_Status is Awaiting Progress
+---4. Otherwise, the Final Status is Awaiting Submission.
+
+--Write a query to report the customer_name and final_status of each customer's order. Order the results by customer name
+
+if OBJECT_ID('cust_orders', 'u') is not null
+drop table cust_orders;
+create table cust_orders
+(
+cust_name   varchar(50),
+order_id    varchar(10),
+status      varchar(50)
+);
+
+insert into cust_orders values ('John', 'J1', 'DELIVERED');
+insert into cust_orders values ('John', 'J2', 'DELIVERED');
+insert into cust_orders values ('David', 'D1', 'SUBMITTED');
+insert into cust_orders values ('David', 'D2', 'DELIVERED'); -- This record is missing in question
+insert into cust_orders values ('David', 'D3', 'CREATED');
+insert into cust_orders values ('Smith', 'S1', 'SUBMITTED');
+insert into cust_orders values ('Krish', 'K1', 'CREATED');
+
+
+select * from cust_orders
+
+select distinct cust_name as Customer_Name, 'COMPLETED' as status
+from cust_orders D
+where D.status = 'DELIVERED'
+and not exists (
+				select 1 from cust_orders d2
+				where d2.cust_name= d.cust_name
+				and d2.status in ('Submitted', 'created')
+				)
+union
+select distinct cust_name as Customer_Name, 'IN PROGRESS' as status
+from cust_orders D
+where D.status = 'DELIVERED'
+and  exists (
+				select 1 from cust_orders d2
+				where d2.cust_name= d.cust_name
+				and d2.status in ('Submitted', 'created')
+				)
+UNION
+select distinct cust_name as Customer_Name, 'AWAITING PROGRESS' as status
+from cust_orders D
+where D.status = 'SUBMITTED'
+and not exists (
+				select 1 from cust_orders d2
+				where d2.cust_name= d.cust_name
+				and d2.status in ('DELIVERED')
+				)
+UNION
+select distinct cust_name as Customer_Name, 'AWAITING SUBMISSION' as status
+from cust_orders D
+where D.status = 'CREATED'
+and not exists (
+				select 1 from cust_orders d2
+				where d2.cust_name= d.cust_name
+				and d2.status in ('DELIVERED', 'SUBMITTED')
+				)
